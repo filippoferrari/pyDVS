@@ -13,17 +13,26 @@ except:
 
 from spinn_front_end_common.utility_models.reverse_ip_tag_multi_cast_source\
     import ReverseIpTagMultiCastSource
-from pacman.model.constraints.key_allocator_constraints\
-    .key_allocator_contiguous_range_constraint \
-    import KeyAllocatorContiguousRangeContraint
 
-from spynnaker_external_devices_plugin.pyNN.connections\
-    .spynnaker_live_spikes_connection import SpynnakerLiveSpikesConnection
+# Need to check because it seems not needed as ReverseIpTagMultiCastSource
+# does not have the two methods which use this in this version
+# from pacman.model.constraints.key_allocator_constraints\
+#     .key_allocator_contiguous_range_constraint \
+#     import KeyAllocatorContiguousRangeContraint
+
+
+from spynnaker8.external_devices import SpynnakerLiveSpikesConnection
+# from spynnaker_external_devices_plugin.pyNN.connections\
+#     .spynnaker_live_spikes_connection import SpynnakerLiveSpikesConnection
 
 from spinnman.messages.eieio.command_messages.database_confirmation import \
     DatabaseConfirmation
 
-import spynnaker_external_devices_plugin.pyNN as ExternalDevices
+import spynnaker8.external_devices as ExternalDevices
+# import spynnaker_external_devices_plugin.pyNN as ExternalDevices
+
+from spinn_front_end_common.utility_models.reverse_ip_tag_multi_cast_source \
+    import ReverseIpTagMultiCastSource
 
 from spynnaker.pyNN import exceptions
 
@@ -249,22 +258,22 @@ class ExternalDvsEmulatorDevice(ReverseIpTagMultiCastSource,
         self._save_spikes = save_spikes
 
 
-    def get_outgoing_edge_constraints(self, partitioned_edge, graph_mapper):
-        constraints = ReverseIpTagMultiCastSource\
-            .get_outgoing_edge_constraints(
-                self, partitioned_edge, graph_mapper)
-        constraints.append(KeyAllocatorContiguousRangeContraint())
-        return constraints
+    # def get_outgoing_edge_constraints(self, partitioned_edge, graph_mapper):
+    #     constraints = ReverseIpTagMultiCastSource\
+    #         .get_outgoing_edge_constraints(
+    #             self, partitioned_edge, graph_mapper)
+    #     constraints.append(KeyAllocatorContiguousRangeContraint())
+    #     return constraints
 
 
-    def get_number_of_mallocs_used_by_dsg(self, vertex_slice, in_edges):
-        mallocs = \
-            ReverseIpTagMultiCastSource.get_number_of_mallocs_used_by_dsg(
-                self, vertex_slice, in_edges)
-        if config.getboolean("SpecExecution", "specExecOnHost"):
-            return 1
-        else:
-            return mallocs
+    # def get_number_of_mallocs_used_by_dsg(self, vertex_slice, in_edges):
+    #     mallocs = \
+    #         ReverseIpTagMultiCastSource.get_number_of_mallocs_used_by_dsg(
+    #             self, vertex_slice, in_edges)
+    #     if config.getboolean("SpecExecution", "specExecOnHost"):
+    #         return 1
+    #     else:
+    #         return mallocs
 
 
     def __del__(self):

@@ -1,14 +1,25 @@
 from spinnman.messages.eieio.eieio_type import EIEIOType
 
-from spynnaker_external_devices_plugin.pyNN import model_binaries
-from spynnaker_external_devices_plugin.pyNN.\
-    spynnaker_external_device_plugin_manager import \
-    SpynnakerExternalDevicePluginManager
+from spynnaker.pyNN import model_binaries
+# from spynnaker_external_devices_plugin.pyNN import model_binaries
+
+from spynnaker.pyNN.spynnaker_external_device_plugin_manager \
+    import SpynnakerExternalDevicePluginManager
+# from spynnaker_external_devices_plugin.pyNN.\
+#     spynnaker_external_device_plugin_manager import \
+#     SpynnakerExternalDevicePluginManager
 
 
-from spynnaker.pyNN.utilities import conf
-from spynnaker.pyNN import IF_curr_exp
-from spynnaker.pyNN.spinnaker import executable_finder
+import spinn_utilities.conf_loader as conf_loader
+# from spynnaker.pyNN.utilities import conf
+
+from spynnaker8 import IF_curr_exp
+# from spynnaker.pyNN import IF_curr_exp
+
+from spynnaker.pyNN.abstract_spinnaker_common\
+    import AbstractSpiNNakerCommon
+# from spynnaker.pyNN.spinnaker import executable_finder
+
 
 from external_dvs_emulator_device import ExternalDvsEmulatorDevice
 
@@ -17,7 +28,7 @@ from spinn_front_end_common.utilities.notification_protocol.socket_address \
 
 import os
 
-executable_finder.add_path(os.path.dirname(model_binaries.__file__))
+AbstractSpiNNakerCommon._EXECUTABLE_FINDER.add_path(os.path.dirname(model_binaries.__file__))
 spynnaker_external_devices = SpynnakerExternalDevicePluginManager()
 
 
@@ -70,13 +81,15 @@ def DvsEmulatorDevice(n_neurons, machine_time_step, timescale_factor,
 
     :return:
     """
+    config = conf_loader.load_config(filename="spynnaker.cfg", defaults=[])
+
     if database_notify_port_num is None:
-        database_notify_port_num = conf.config.getint("Database",
+        database_notify_port_num = config.getint("Database",
                                                       "notify_port")
     if database_notify_host is None:
-        database_notify_host = conf.config.get("Database", "notify_hostname")
+        database_notify_host = config.get("Database", "notify_hostname")
     if database_ack_port_num is None:
-        database_ack_port_num = conf.config.get("Database", "listen_port")
+        database_ack_port_num = config.get("Database", "listen_port")
         if database_ack_port_num == "None":
             database_ack_port_num = None
 

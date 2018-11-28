@@ -45,13 +45,13 @@ BEHAVE_FADE         = "FADE"
 IMAGE_TYPES = ["png", 'jpeg', 'jpg']
 
 
-def wait_ms(prev_time_ms, wait_time_ms):
-    t = time.time()*1000. - prev_time_ms
-    while t < wait_time_ms:
-        if t < 0:
-            break
-        sleep((wait_time_ms - t)/1000.)
-        t = time.time()*1000. - prev_time_ms
+# def wait_ms(prev_time_ms, wait_time_ms):
+#     t = time.time()*1000. - prev_time_ms
+#     while t < wait_time_ms:
+#         if t < 0:
+#             break
+#         sleep((wait_time_ms - t)/1000.)
+#         t = time.time()*1000. - prev_time_ms
         
 def get_filenames(img_dir):
     imgs = []

@@ -1,6 +1,6 @@
 import pylab
 import cv2
-import spynnaker.pyNN as sim
+import spynnaker8 as sim
 
 from pydvs.external_dvs_emulator_device_wrapper import DvsEmulatorDevice
 from pydvs.external_dvs_emulator_device import ExternalDvsEmulatorDevice
@@ -38,8 +38,8 @@ def main():
     output_type = ExternalDvsEmulatorDevice.OUTPUT_TIME
     history_weight = 1.0
     behaviour = VirtualCam.BEHAVE_ATTENTION
-    vcam = VirtualCam("./mnist", behaviour=behaviour, fps=cam_fps, 
-                      resolution=cam_res, frames_per_saccade=frames_per_saccade)
+    # vcam = VirtualCam("./mnist", behaviour=behaviour, fps=cam_fps, 
+    #                   resolution=cam_res, frames_per_saccade=frames_per_saccade)
                       
     cam_params = {'mode': mode,
                   'polarity': polarity,
@@ -50,9 +50,9 @@ def main():
                   'output_type': output_type,
                   'save_spikes': "./spikes_from_cam.pickle",
                   'history_weight': history_weight,
-                  #'device_id': 0, # for an OpenCV webcam device
+                  'device_id': 0, # for an OpenCV webcam device
                   #'device_id': 'path/to/video/file', # to encode pre-recorded video
-                  'device_id': vcam,
+                  #'device_id': vcam,
                  }
     if polarity == ExternalDvsEmulatorDevice.MERGED_POLARITY:
         num_neurons = 2*(cam_res**2)
@@ -63,19 +63,20 @@ def main():
 
     target = sim.Population(num_neurons, model, cell_params)
 
-    stimulation = sim.Population(num_neurons, DvsEmulatorDevice, cam_params,
-                                 label="Webcam population")
+    stimulation = sim.Population(num_neurons, DvsEmulatorDevice, cam_params, label="Webcam population")
 
-    connector = sim.OneToOneConnector(weights=weight_to_spike)
+    connector = sim.OneToOneConnector()
 
-    projection = sim.Projection(stimulation, target, connector)
+    sim.Projection(stimulation, target, connector, synapse_type=sim.StaticSynapse(weight=weight_to_spike))
 
-    target.record()
+    target.record("spikes")
         
     sim.run(run_time)
 
     
-    spikes = target.getSpikes(compatible_output=True)
+    # spikes = target.getSpikes(compatible_output=True)
+    target_neo = target.get_data(variables=["spikes"])
+    spikes = target_neo.segments[0].spiketrains
 
     sim.end()
     #stimulation._vertex.stop()

@@ -737,7 +737,7 @@ cdef inline grab_spike_key(DTYPE_t row, DTYPE_t col,
 @cython.boundscheck(False) # turn off bounds-checking for entire function
 cdef np.ndarray[DTYPE_t, ndim=1] spike_to_xyp(DTYPE_t row, DTYPE_t col,
                           DTYPE_U8_t is_pos_spike):
-  return np.array([col, row, is_pos_spike])
+  return np.array([col, row, is_pos_spike], dtype=DTYPE)
 
 
 @cython.boundscheck(False) # turn off bounds-checking for entire function
@@ -891,7 +891,8 @@ def make_spike_lists_time(np.ndarray[DTYPE_t, ndim=2] pos_spikes,
 
 
   cdef Py_ssize_t time_idx, pix_idx, neg_idx
-  cdef DTYPE_t spike_key
+  cdef DTYPE_t spike_key_spinnaker
+  cdef np.ndarray[DTYPE_t, ndim=1] spike_key_xyp
   cdef list list_of_lists = list()
 
   for time_idx in range(num_bins):
@@ -900,30 +901,59 @@ def make_spike_lists_time(np.ndarray[DTYPE_t, ndim=2] pos_spikes,
 #~   print list_of_lists
 
 #~   for pix_idx in prange(max_pix, nogil=True):
-  for pix_idx in range(max_pix):
-    if pix_idx < len_pos:
-      spike_key = grab_spike_key(pos_spikes[ROWS, pix_idx], \
-                                 pos_spikes[COLS, pix_idx], \
-                                 flag_shift, data_shift, data_mask,\
-                                 is_pos_spike = 1,
-                                 key_coding=key_coding)
-      num_thresh = min(pos_spikes[VALS, pix_idx]//min_threshold  - 1, num_bins - 1)
-    else:
-      neg_idx = pix_idx - len_pos
-      spike_key = grab_spike_key(neg_spikes[ROWS, neg_idx], \
-                                 neg_spikes[COLS, neg_idx], \
-                                 flag_shift, data_shift, data_mask,\
-                                 is_pos_spike = 0,
-                                 key_coding=key_coding)
+  if key_coding == KEY_SPINNAKER:
 
-      num_thresh = max( min(neg_spikes[VALS, neg_idx]//min_threshold - 1, 
-                            num_bins - 1),
-                        0 )
+    for pix_idx in range(max_pix):
+      if pix_idx < len_pos:
+        spike_key_spinnaker = grab_spike_key(pos_spikes[ROWS, pix_idx], \
+                                  pos_spikes[COLS, pix_idx], \
+                                  flag_shift, data_shift, data_mask,\
+                                  is_pos_spike = 1,
+                                  key_coding=key_coding)
+        num_thresh = min(pos_spikes[VALS, pix_idx]//min_threshold  - 1, num_bins - 1)
+      else:
+        neg_idx = pix_idx - len_pos
+        spike_key_spinnaker = grab_spike_key(neg_spikes[ROWS, neg_idx], \
+                                  neg_spikes[COLS, neg_idx], \
+                                  flag_shift, data_shift, data_mask,\
+                                  is_pos_spike = 0,
+                                  key_coding=key_coding)
 
-#     time_idx = num_thresh 
-    time_idx = num_bins - num_thresh - 1
-#~     print "num_bins(%s), num_thresh (%s), time_idx (%s)"%(num_bins, num_thresh, time_idx)
-    list_of_lists[time_idx].append( spike_key )
+        num_thresh = max( min(neg_spikes[VALS, neg_idx]//min_threshold - 1, 
+                              num_bins - 1),
+                          0 )
+
+  #     time_idx = num_thresh 
+      time_idx = num_bins - num_thresh - 1
+  #~     print "num_bins(%s), num_thresh (%s), time_idx (%s)"%(num_bins, num_thresh, time_idx)
+      list_of_lists[time_idx].append( spike_key_spinnaker )
+
+  else:
+    for pix_idx in range(max_pix):
+      if pix_idx < len_pos:
+        spike_key_xyp = grab_spike_key(pos_spikes[ROWS, pix_idx], \
+                                  pos_spikes[COLS, pix_idx], \
+                                  flag_shift, data_shift, data_mask,\
+                                  is_pos_spike = 1,
+                                  key_coding=key_coding)
+        num_thresh = min(pos_spikes[VALS, pix_idx]//min_threshold  - 1, num_bins - 1)
+      else:
+        neg_idx = pix_idx - len_pos
+        spike_key_xyp = grab_spike_key(neg_spikes[ROWS, neg_idx], \
+                                  neg_spikes[COLS, neg_idx], \
+                                  flag_shift, data_shift, data_mask,\
+                                  is_pos_spike = 0,
+                                  key_coding=key_coding)
+
+        num_thresh = max( min(neg_spikes[VALS, neg_idx]//min_threshold - 1, 
+                              num_bins - 1),
+                          0 )
+
+  #     time_idx = num_thresh 
+      time_idx = num_bins - num_thresh - 1
+  #~     print "num_bins(%s), num_thresh (%s), time_idx (%s)"%(num_bins, num_thresh, time_idx)
+      list_of_lists[time_idx].append( spike_key_xyp )
+
 
   return list_of_lists
 
@@ -1049,52 +1079,94 @@ def make_spike_lists_time_bin_thr(np.ndarray[DTYPE_t, ndim=2] pos_spikes,
 
   cdef np.ndarray[DTYPE_IDX_t, ndim=1] indices
   cdef Py_ssize_t time_idx, pix_idx, neg_idx
-  cdef DTYPE_t spike_key
+  cdef DTYPE_t spike_key_spinnaker
+  cdef np.ndarray[DTYPE_t, ndim=1] spike_key_xyp
   cdef list list_of_lists = list()
   cdef unsigned char byte_code
 
-  for spike_key in range(num_bins):
+  for _ in range(num_bins):
     list_of_lists.append(list())
 
-#~   for pix_idx in prange(max_pix, nogil=True):
-  for pix_idx in range(max_pix):
-    if pix_idx < len_pos:
-      spike_key = grab_spike_key(pos_spikes[ROWS, pix_idx], \
-                                 pos_spikes[COLS, pix_idx], \
-                                 flag_shift, data_shift, data_mask,\
-                                 is_pos_spike = 1,
-                                 key_coding=key_coding)
+  if key_coding == KEY_SPINNAKER:
+  #~   for pix_idx in prange(max_pix, nogil=True):
+    for pix_idx in range(max_pix):
+      if pix_idx < len_pos:
+        spike_key_spinnaker = grab_spike_key(pos_spikes[ROWS, pix_idx], \
+                                  pos_spikes[COLS, pix_idx], \
+                                  flag_shift, data_shift, data_mask,\
+                                  is_pos_spike = 1,
+                                  key_coding=key_coding)
 
-      byte_code = log2_table[ pos_spikes[VALS, pix_idx]//min_threshold ]
+        byte_code = log2_table[ pos_spikes[VALS, pix_idx]//min_threshold ]
 
-      indices, = np.where( np.unpackbits(np.uint8(byte_code)) )
-#~       print "byte_val (%s)"%byte_code
-#~       print indices
+        indices, = np.where( np.unpackbits(np.uint8(byte_code)) )
+  #~       print "byte_val (%s)"%byte_code
+  #~       print indices
 
-      for i in indices:
-        if i > num_bins:
-          i = num_bins
-        list_of_lists[i - 1].append(spike_key)
+        for i in indices:
+          if i > num_bins:
+            i = num_bins
+          list_of_lists[i - 1].append(spike_key_spinnaker)
 
-    else:
-      neg_idx = pix_idx - len_pos
-      spike_key = grab_spike_key(neg_spikes[ROWS, neg_idx], \
-                                 neg_spikes[COLS, neg_idx], \
-                                 flag_shift, data_shift, data_mask,\
-                                 is_pos_spike = 0,
-                                 key_coding=key_coding)
+      else:
+        neg_idx = pix_idx - len_pos
+        spike_key_spinnaker = grab_spike_key(neg_spikes[ROWS, neg_idx], \
+                                  neg_spikes[COLS, neg_idx], \
+                                  flag_shift, data_shift, data_mask,\
+                                  is_pos_spike = 0,
+                                  key_coding=key_coding)
 
-      byte_code = log2_table[ neg_spikes[VALS, neg_idx]//min_threshold ]
+        byte_code = log2_table[ neg_spikes[VALS, neg_idx]//min_threshold ]
 
-      indices, = np.where( np.unpackbits(np.uint8(byte_code)) )
-#~       print "byte_val (%s)"%byte_code
-#~       print indices
+        indices, = np.where( np.unpackbits(np.uint8(byte_code)) )
+  #~       print "byte_val (%s)"%byte_code
+  #~       print indices
 
-      for i in indices:
-        if i > num_bins:
-          i = num_bins
+        for i in indices:
+          if i > num_bins:
+            i = num_bins
 
-        list_of_lists[i - 1].append(spike_key)
+          list_of_lists[i - 1].append(spike_key_spinnaker)
+  else:
+  #~   for pix_idx in prange(max_pix, nogil=True):
+    for pix_idx in range(max_pix):
+      if pix_idx < len_pos:
+        spike_key_xyp = grab_spike_key(pos_spikes[ROWS, pix_idx], \
+                                  pos_spikes[COLS, pix_idx], \
+                                  flag_shift, data_shift, data_mask,\
+                                  is_pos_spike = 1,
+                                  key_coding=key_coding)
+
+        byte_code = log2_table[ pos_spikes[VALS, pix_idx]//min_threshold ]
+
+        indices, = np.where( np.unpackbits(np.uint8(byte_code)) )
+  #~       print "byte_val (%s)"%byte_code
+  #~       print indices
+
+        for i in indices:
+          if i > num_bins:
+            i = num_bins
+          list_of_lists[i - 1].append(spike_key_xyp)
+
+      else:
+        neg_idx = pix_idx - len_pos
+        spike_key_xyp = grab_spike_key(neg_spikes[ROWS, neg_idx], \
+                                  neg_spikes[COLS, neg_idx], \
+                                  flag_shift, data_shift, data_mask,\
+                                  is_pos_spike = 0,
+                                  key_coding=key_coding)
+
+        byte_code = log2_table[ neg_spikes[VALS, neg_idx]//min_threshold ]
+
+        indices, = np.where( np.unpackbits(np.uint8(byte_code)) )
+  #~       print "byte_val (%s)"%byte_code
+  #~       print indices
+
+        for i in indices:
+          if i > num_bins:
+            i = num_bins
+
+          list_of_lists[i - 1].append(spike_key_xyp)
 
   return list_of_lists
 
